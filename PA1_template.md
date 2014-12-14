@@ -8,15 +8,10 @@ keep_md: true
 
 ## Loading and preprocessing the data
 Data is being loaded and processed here.  There is no meaningful output at this point.
-```{r initialize, echo=FALSE}
-library(knitr)
-options(scipen = 1, digits = 2)
-opts_chunk$set(echo=T, results="hide", fig.width=8)
-```
-
-```{r loadData, message=F}
 
 
+
+```r
 rm(list=ls())
 library(lubridate)
 library(ggplot2)
@@ -40,7 +35,8 @@ dat$date <- ymd(dat$date)
 Looking at the number of steps we get the histogram below.  This shows a fairly normal distribution of steps per day with what appear to be some outliers of high activity.
 
 
-```{r means}
+
+```r
 totalSteps <- as.numeric(tapply(dat$steps,dat$date,sum,na.rm=F))
 day <- unique(dat$date)
 byDay <- data.frame(day,totalSteps)
@@ -52,18 +48,23 @@ hist(byDay$totalSteps[!is.na(byDay$totalSteps)],
      ylab="Frequency",
      main="Distribution of Total Steps Per Day",
      col="red")
+```
 
+![plot of chunk means](figure/means-1.png) 
+
+```r
 meanByDay <- mean(byDay$totalSteps,na.rm=T)
 medianByDay <- median(byDay$totalSteps,na.rm=T)
 ```
 
-The mean number of steps per day is `r meanByDay` while the median steps per day is `r medianByDay` steps.
+The mean number of steps per day is 10766.19 while the median steps per day is 10765 steps.
 
 ## What is the average daily activity pattern?
 
 If we take the average for each time period throughout the day, we see the time history below.  We can see a period of inactivity due to sleep, then a morning peak, then a medium activity level through the rest of the day.  This then trails off until sleep occurs again.
 
-```{r daily}
+
+```r
 byInterval <- ddply(dat,~interval,summarize,meanSteps=mean(steps,na.rm=T)) %>%
   mutate(hhmm = formatC(interval,width=4,flag="0")) %>%
   separate(hhmm,into=c("hr","min"),sep=2)
@@ -73,24 +74,30 @@ byInterval <- mutate(byInterval,time=min(dat$date)+minutes(min)+hours(hr))
 ggplot(byInterval, aes(x=time,y=meanSteps)) +
   geom_line() +
   scale_x_datetime(labels = date_format("%H:%M"), breaks = date_breaks("2 hour"))
+```
 
+![plot of chunk daily](figure/daily-1.png) 
+
+```r
 # find maximum line
 maxPoint <- byInterval[byInterval$meanSteps==max(byInterval$meanSteps),]
 maxTime <- strftime(maxPoint$time, format="%I:%M %p",tz="UTC")
 ```
 
-On average the maximum steps per day occurs at `r maxTime` which is time interval `r as.numeric(maxPoint[1])`.
+On average the maximum steps per day occurs at 08:35 AM which is time interval 835.
 
 ## Imputing missing values
-```{r countNA}
+
+```r
 # number of na's in all lines
 colNAs <- colSums(is.na(dat))
 totalNA <- sum(is.na(dat))
 ```
 
-There are a total of `r totalNA` missing values in the data set of `r nrow(dat)` observations.  If we apply the mean steps for any time interval that is missing with the mean for that time (from the above plot) then we get the distribution of steps per day below.
+There are a total of 2304 missing values in the data set of 17568 observations.  If we apply the mean steps for any time interval that is missing with the mean for that time (from the above plot) then we get the distribution of steps per day below.
 
-``` {r missingFix}
+
+```r
 # create new data set for fixe data
 datFix <- dat
 
@@ -112,17 +119,22 @@ hist(byDayFix$totalSteps[!is.na(byDayFix$totalSteps)],
      ylab="Frequency",
      main="Distribution of Total Steps Per Day With Fixed Data",
      col="blue")
+```
 
+![plot of chunk missingFix](figure/missingFix-1.png) 
+
+```r
 meanByDayFix <- mean(byDayFix$totalSteps,na.rm=T)
 medianByDayFix <- median(byDayFix$totalSteps,na.rm=T)
 ```
 
 Here we see that the distribution is essentially the same as when the missing data had not been fixed, as in part 1.  However the peak around the mean becomes more pronounced as the missing data points are being filled with mean values.  This would then just cause more values to fill the mean bin.
 
-The mean number of steps per day for the fixed data is `r meanByDayFix` while the median steps per day is `r medianByDayFix` steps.  This is compared with the mean and median of `r meanByDay` and `r medianByDay` respectively for the unfixed data.  This shows the mean stays the same as mean data was added in to the missing data, but the median changed slightly.
+The mean number of steps per day for the fixed data is 10766.19 while the median steps per day is 10766.19 steps.  This is compared with the mean and median of 10766.19 and 10765 respectively for the unfixed data.  This shows the mean stays the same as mean data was added in to the missing data, but the median changed slightly.
 
 ## Are there differences in activity patterns between weekdays and weekends?
-```{r weekends}
+
+```r
 weekends <- which(weekdays(datFix$date)=="Saturday"|weekdays(datFix$date)=="Sunday")
 datFix$day <- weekdays(datFix$date)
 datFix$weekday <- "weekday"
@@ -140,6 +152,11 @@ ggplot(weekendSummary, aes(time, meanSteps)) +
   ylab("Total Steps") + 
   ggtitle("Total Steps By Day") +
   scale_x_datetime(labels = date_format("%H:%M"), breaks = date_breaks("2 hour"))# +
+```
+
+![plot of chunk weekends](figure/weekends-1.png) 
+
+```r
   #theme(axis.text.x  = element_text(angle=45, vjust=0.5, size=8))
 ```
 
